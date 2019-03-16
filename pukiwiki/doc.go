@@ -40,4 +40,4 @@ links or code blocks.
 	}
 	renderer := html.NewRenderer(opts)
 */
-package html
+package pukiwiki

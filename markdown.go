@@ -7,6 +7,7 @@ import (
 	"github.com/gomarkdown/markdown/ast"
 	"github.com/gomarkdown/markdown/html"
 	"github.com/gomarkdown/markdown/parser"
+	"github.com/gomarkdown/markdown/pukiwiki"
 )
 
 // Renderer is an interface for implementing custom renderers.
@@ -80,6 +81,24 @@ func ToHTML(markdown []byte, p *parser.Parser, renderer Renderer) []byte {
 			Flags: html.CommonFlags,
 		}
 		renderer = html.NewRenderer(opts)
+	}
+	return Render(doc, renderer)
+}
+
+// ToPukiwiki converts markdownDoc to Pukiwiki.
+//
+// You can optionally pass a parser and renderer. This allows to customize
+// a parser, use a customized html render or use completely custom renderer.
+//
+// If you pass nil for both, we use parser configured with parser.CommonExtensions
+// and pukiwiki.Renderer configured with pukiwiki.CommonFlags.
+func ToPukiwiki(markdown []byte, p *parser.Parser, renderer Renderer) []byte {
+	doc := Parse(markdown, p)
+	if renderer == nil {
+		opts := pukiwiki.RendererOptions{
+			Flags: pukiwiki.CommonFlags,
+		}
+		renderer = pukiwiki.NewRenderer(opts)
 	}
 	return Render(doc, renderer)
 }

@@ -1,4 +1,4 @@
-package html
+package pukiwiki
 
 import (
 	"bytes"
@@ -341,7 +341,7 @@ func (r *Renderer) outTag(w io.Writer, name string, attrs []string) {
 	if len(attrs) > 0 {
 		s += " " + strings.Join(attrs, " ")
 	}
-	io.WriteString(w, s+">")
+	io.WriteString(w, s)
 	r.lastOutputLen = 1
 }
 
@@ -403,27 +403,26 @@ func (r *Renderer) cr(w io.Writer) {
 }
 
 var (
-	openHTags  = []string{"<h1", "<h2", "<h3", "<h4", "<h5"}
-	closeHTags = []string{"</h1>", "</h2>", "</h3>", "</h4>", "</h5>"}
+	openHTags  = []string{"* ", "** ", "*** ", "****", "*****"}
+	closeHTags = []string{"\n", "\n", "\n", "\n", "\n"}
 )
 
 func headingOpenTagFromLevel(level int) string {
-	if level < 1 || level > 5 {
-		return "<h6"
+	if level < 1 || level > 3 {
+		return "*** "
 	}
 	return openHTags[level-1]
 }
 
 func headingCloseTagFromLevel(level int) string {
-	if level < 1 || level > 5 {
-		return "</h6>"
+	if level < 1 || level > 3 {
+		return ""
 	}
 	return closeHTags[level-1]
 }
 
 func (r *Renderer) outHRTag(w io.Writer, attrs []string) {
-	hr := tagWithAttributes("<hr", attrs)
-	r.outOneOf(w, r.opts.Flags&UseXHTML == 0, hr, "<hr />")
+	r.outs(w, "&hr;")
 }
 
 func (r *Renderer) text(w io.Writer, text *ast.Text) {
@@ -442,7 +441,7 @@ func (r *Renderer) text(w io.Writer, text *ast.Text) {
 }
 
 func (r *Renderer) hardBreak(w io.Writer, node *ast.Hardbreak) {
-	r.outOneOf(w, r.opts.Flags&UseXHTML == 0, "<br>", "<br />")
+	r.outs(w, "&br;")
 	r.cr(w)
 }
 
@@ -563,12 +562,12 @@ func (r *Renderer) paragraphEnter(w io.Writer, para *ast.Paragraph) {
 		}
 	}
 
-	tag := tagWithAttributes("<p", BlockAttrs(para))
-	r.outs(w, tag)
+	//tag := tagWithAttributes("<p", BlockAttrs(para))
+	//r.outs(w, tag)
 }
 
 func (r *Renderer) paragraphExit(w io.Writer, para *ast.Paragraph) {
-	r.outs(w, "</p>")
+	//r.outs(w, "</p>")
 	if !(isListItem(para.Parent) && ast.GetNextNode(para) == nil) {
 		r.cr(w)
 	}
@@ -663,7 +662,7 @@ func (r *Renderer) horizontalRule(w io.Writer, node *ast.HorizontalRule) {
 
 func (r *Renderer) listEnter(w io.Writer, nodeData *ast.List) {
 	// TODO: attrs don't seem to be set
-	var attrs []string
+	//var attrs []string
 
 	if nodeData.IsFootnotesList {
 		r.outs(w, "\n<div class=\"footnotes\">\n\n")
@@ -680,30 +679,30 @@ func (r *Renderer) listEnter(w io.Writer, nodeData *ast.List) {
 		}
 	}
 
-	openTag := "<ul"
-	if nodeData.ListFlags&ast.ListTypeOrdered != 0 {
-		if nodeData.Start > 0 {
-			attrs = append(attrs, fmt.Sprintf(`start="%d"`, nodeData.Start))
-		}
-		openTag = "<ol"
-	}
-	if nodeData.ListFlags&ast.ListTypeDefinition != 0 {
-		openTag = "<dl"
-	}
-	attrs = append(attrs, BlockAttrs(nodeData)...)
-	r.outTag(w, openTag, attrs)
-	r.cr(w)
+	//openTag := "<ul"
+	//if nodeData.ListFlags&ast.ListTypeOrdered != 0 {
+	//	if nodeData.Start > 0 {
+	//		attrs = append(attrs, fmt.Sprintf(`start="%d"`, nodeData.Start))
+	//	}
+	//	openTag = "<ol"
+	//}
+	//if nodeData.ListFlags&ast.ListTypeDefinition != 0 {
+	//	openTag = "<dl"
+	//}
+	//attrs = append(attrs, BlockAttrs(nodeData)...)
+	//r.outTag(w, openTag, attrs)
+	//r.cr(w)
 }
 
 func (r *Renderer) listExit(w io.Writer, list *ast.List) {
-	closeTag := "</ul>"
-	if list.ListFlags&ast.ListTypeOrdered != 0 {
-		closeTag = "</ol>"
-	}
-	if list.ListFlags&ast.ListTypeDefinition != 0 {
-		closeTag = "</dl>"
-	}
-	r.outs(w, closeTag)
+	//closeTag := "</ul>"
+	//if list.ListFlags&ast.ListTypeOrdered != 0 {
+	//	closeTag = "</ol>"
+	//}
+	//if list.ListFlags&ast.ListTypeDefinition != 0 {
+	//	closeTag = "</dl>"
+	//}
+	//r.outs(w, closeTag)
 
 	//cr(w)
 	//if node.parent.Type != Item {
@@ -742,7 +741,10 @@ func (r *Renderer) listItemEnter(w io.Writer, listItem *ast.ListItem) {
 		return
 	}
 
-	openTag := "<li>"
+	openTag := "- "
+	if listItem.ListFlags&ast.ListTypeOrdered != 0 {
+		openTag = "+ "
+	}
 	if listItem.ListFlags&ast.ListTypeDefinition != 0 {
 		openTag = "<dd>"
 	}
@@ -761,7 +763,7 @@ func (r *Renderer) listItemExit(w io.Writer, listItem *ast.ListItem) {
 		r.outs(w, s)
 	}
 
-	closeTag := "</li>"
+	closeTag := "\n"
 	if listItem.ListFlags&ast.ListTypeDefinition != 0 {
 		closeTag = "</dd>"
 	}
@@ -769,7 +771,7 @@ func (r *Renderer) listItemExit(w io.Writer, listItem *ast.ListItem) {
 		closeTag = "</dt>"
 	}
 	r.outs(w, closeTag)
-	r.cr(w)
+	//r.cr(w)
 }
 
 func (r *Renderer) listItem(w io.Writer, listItem *ast.ListItem, entering bool) {
@@ -824,39 +826,39 @@ func (r *Renderer) captionFigure(w io.Writer, figure *ast.CaptionFigure, enterin
 
 func (r *Renderer) tableCell(w io.Writer, tableCell *ast.TableCell, entering bool) {
 	if !entering {
-		r.outOneOf(w, tableCell.IsHeader, "</th>", "</td>")
-		r.cr(w)
+		r.outs(w, " |")
+		//r.outOneOf(w, tableCell.IsHeader, "| ", "| ")
+		//r.cr(w)
 		return
 	}
 
 	// entering
 	var attrs []string
-	openTag := "<td"
+	openTag := " "
 	if tableCell.IsHeader {
-		openTag = "<th"
+		openTag = "~ "
 	}
 	align := tableCell.Align.String()
 	if align != "" {
 		attrs = append(attrs, fmt.Sprintf(`align="%s"`, align))
 	}
-	if ast.GetPrevNode(tableCell) == nil {
-		r.cr(w)
-	}
-	r.outTag(w, openTag, attrs)
+	//r.outTag(w, openTag, attrs)
+	r.outs(w, openTag)
+	print(openTag)
 }
 
 func (r *Renderer) tableBody(w io.Writer, node *ast.TableBody, entering bool) {
-	if entering {
-		r.cr(w)
-		r.outs(w, "<tbody>")
-		// XXX: this is to adhere to a rather silly test. Should fix test.
-		if ast.GetFirstChild(node) == nil {
-			r.cr(w)
-		}
-	} else {
-		r.outs(w, "</tbody>")
-		r.cr(w)
-	}
+	//if entering {
+	//	r.cr(w)
+	//	r.outs(w, "<tbody>")
+	//	XXX: this is to adhere to a rather silly test. Should fix test.
+	//if ast.GetFirstChild(node) == nil {
+	//	r.cr(w)
+	//}
+	//} else {
+	//	r.outs(w, "</tbody>")
+	//	r.cr(w)
+	//}
 }
 
 func (r *Renderer) matter(w io.Writer, node *ast.DocumentMatter, entering bool) {
@@ -925,11 +927,11 @@ func (r *Renderer) RenderNode(w io.Writer, node ast.Node, entering bool) ast.Wal
 	case *ast.Hardbreak:
 		r.hardBreak(w, node)
 	case *ast.Emph:
-		r.outOneOf(w, entering, "<em>", "</em>")
+		r.outOneOf(w, entering, "'''", "'''")
 	case *ast.Strong:
-		r.outOneOf(w, entering, "<strong>", "</strong>")
+		r.outOneOf(w, entering, "''", "''")
 	case *ast.Del:
-		r.outOneOf(w, entering, "<del>", "</del>")
+		r.outOneOf(w, entering, "%%", "%%")
 	case *ast.BlockQuote:
 		tag := tagWithAttributes("<blockquote", BlockAttrs(node))
 		r.outOneOfCr(w, entering, tag, "</blockquote>")
@@ -973,18 +975,18 @@ func (r *Renderer) RenderNode(w io.Writer, node ast.Node, entering bool) ast.Wal
 	case *ast.ListItem:
 		r.listItem(w, node, entering)
 	case *ast.Table:
-		tag := tagWithAttributes("<table", BlockAttrs(node))
-		r.outOneOfCr(w, entering, tag, "</table>")
+		//tag := tagWithAttributes("<table", BlockAttrs(node))
+		r.outOneOfCr(w, entering, "", "\n")
 	case *ast.TableCell:
 		r.tableCell(w, node, entering)
 	case *ast.TableHeader:
-		r.outOneOfCr(w, entering, "<thead>", "</thead>")
+		r.outOneOf(w, entering, "", "h\n")
 	case *ast.TableBody:
 		r.tableBody(w, node, entering)
 	case *ast.TableRow:
-		r.outOneOfCr(w, entering, "<tr>", "</tr>")
+		r.outOneOf(w, entering, "|", "")
 	case *ast.TableFooter:
-		r.outOneOfCr(w, entering, "<tfoot>", "</tfoot>")
+		r.outOneOfCr(w, entering, "", "f\n")
 	case *ast.Math:
 		r.outOneOf(w, true, `<span class="math inline">\(`, `\)</span>`)
 		EscapeHTML(w, node.Literal)
